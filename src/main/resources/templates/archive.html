@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список летательных конструкций</title>
+
+    <style>
+        body {
+            font-family: "Arial", sans-serif;
+            font-size: 14px;
+            color: black;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+
+        th {
+            background-color: #cfdfff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #cfdfff;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .button:hover {
+            background-color: #a8cfff;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        #exitButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #cfdfff;
+        }
+    </style>
+
+
+</head>
+<body>
+<div class="container">
+    <a th:href="@{/}"><button id="exitButton" class="button">Назад</button></a><br><br>
+    <div class="title">Архив сравнительных анализов</div>
+    <table id="reportTable">
+        <tr>
+            <th>Id</th>
+            <th>Название</th>
+            <th colspan="2">Действия</th>
+        </tr>
+    </table>
+
+</div>
+
+
+<script>
+    // Отправка GET-запроса на сервер для получения данных о летательных конструкциях
+    fetch('/api/v1/reports')
+        .then(response => {
+            // Проверка статуса ответа
+            if (!response.ok) {
+                throw new Error('Ошибка HTTP: ' + response.status);
+            }
+            // Преобразование ответа в формат JSON
+            return response.json();
+        })
+        .then(data => {
+            // Полученные данные о летательных конструкциях
+            const reports = data;
+            const table = document.getElementById('reportTable');
+
+            // Заполнение таблицы данными
+            reports.forEach(report => {
+                const row = table.insertRow();
+                row.innerHTML = `<td>${report.id}</td>
+                                 <td>${report.name_report}</td>
+                                 <td><button class="download-button" data-report-id="${report.id}">Скачать</button></td>
+                                 <td><button onclick="deleteReport(${report.id})">Удалить</button></td>`;
+            });
+        })
+        .catch(error => {
+            // Обработка ошибок
+            // Вывод ошибки в виде всплывающего окна
+            alert('Произошла ошибка при получении данных: ' + error.message);
+        });
+
+    // Функция для обработки нажатия кнопки "Удалить"
+    function deleteReport(id) {
+        // Отправка запроса DELETE на серверную часть для удаления летательной конструкции с указанным id
+        fetch(`/api/v1/reports/${id}`, {
+            method: 'DELETE'
+        })
+            .then(response => {
+                // Проверка статуса ответа
+                if (response.ok) {
+                    // Перезагрузка страницы для обновления данных
+                    location.reload();
+                } else {
+                    // Вывод ошибки в виде всплывающего окна
+                    alert('Произошла ошибка при удалении: ' + error.message);
+                }
+            })
+            .catch(error => {
+                // Вывод ошибки в виде всплывающего окна
+                alert('Произошла ошибка при удалении: ' + error.message);
+            });
+    }
+
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('download-button')) {
+            const reportId = event.target.getAttribute('data-report-id');
+            fetch(`/api/v1/reports/${reportId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка HTTP: ' + response.status);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `report_${reportId}.doc`; // Имя файла для скачивания
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    alert('Произошла ошибка при загрузке отчета: ' + error.message);
+                });
+        }
+    });
+</script>
+
+</body>
+</html>

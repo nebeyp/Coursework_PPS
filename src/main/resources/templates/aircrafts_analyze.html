@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализ Летательных Аппаратов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: block;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .table-container {
+            width: 50%;
+            margin-right: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .analysis-form {
+            width: 50%;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #cfdfff;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .button:hover {
+            background-color: #a8cfff;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .analysis-result {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .analysis-result textarea {
+            width: 100%;
+            height: 300px;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        #exitButton {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #cfdfff;
+        }
+    </style>
+</head>
+<body>
+<button id="exitButton" class="button" onclick="goBack()">Назад</button><br><br>
+<div class="container">
+
+    <div class="table-container">
+        <div class="title">Анализ Летательных Аппаратов</div>
+        <table id="aircraftTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Название</th>
+                <th>Модель</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Содержимое таблицы будет добавлено динамически через JavaScript -->
+            </tbody>
+        </table>
+    </div><br><br>
+    <div class="analysis-form">
+        <div class="title">Форма для анализа</div>
+        <div class="form-group">
+            <label for="firstAircraftId">ID первого ЛА:</label>
+            <input type="text" id="firstAircraftId" name="firstAircraftId">
+        </div>
+        <div class="form-group">
+            <label for="secondAircraftId">ID второго ЛА:</label>
+            <input type="text" id="secondAircraftId" name="secondAircraftId">
+        </div>
+        <button class="button" id="performAnalysisButton" onclick="performAnalysis()">Выполнить анализ</button>
+
+    </div>
+    <div class="analysis-result">
+        <div class="title">Результаты анализа</div>
+        <textarea id="analysisTextArea" readonly></textarea>
+    </div>
+    <div>
+        <button id="saveButton" class="button">Сохранить</button><br><br>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/api/v1/aircrafts')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ошибка HTTP: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const aircrafts = data;
+                const table = document.getElementById('aircraftTable');
+                aircrafts.forEach(aircraft => {
+                    const row = table.insertRow();
+                    row.innerHTML = `<td>${aircraft.id}</td>
+                                 <td>${aircraft.name}</td>
+                                 <td>${aircraft.model}</td>`;
+                });
+            })
+            .catch(error => {
+                alert('Произошла ошибка при получении данных: ' + error.message);
+            });
+
+        // Обработчик события клика на кнопку "Выполнить анализ"
+        document.getElementById('performAnalysisButton').addEventListener('click', function() {
+            const firstAircraftId = document.getElementById('firstAircraftId').value;
+            const secondAircraftId = document.getElementById('secondAircraftId').value;
+            if (firstAircraftId.trim() === '' || secondAircraftId.trim() === '') {
+                alert('Пожалуйста, введите ID обоих ЛА.');
+                return;
+            }
+
+            // Если все проверки прошли успешно, можно выполнять анализ
+            performAnalysis();
+        });
+    });
+
+    async function performAnalysis() {
+        // Получение ID летательных аппаратов из полей ввода
+        const firstAircraftId = document.getElementById('firstAircraftId').value;
+        const secondAircraftId = document.getElementById('secondAircraftId').value;
+
+        // Функция для получения данных о летательном аппарате по его ID
+        async function getAircraftData(aircraftId) {
+            const response = await fetch(`/api/v1/aircrafts/${aircraftId}`);
+            if (!response.ok) {
+                throw new Error('Ошибка HTTP: ' + response.status);
+            }
+            return await response.json();
+        }
+
+        try {
+            // Получение данных о каждом летательном аппарате
+            const firstAircraft = await getAircraftData(firstAircraftId);
+            const secondAircraft = await getAircraftData(secondAircraftId);
+
+            // Вычисление параметров для сравнения
+            const areaInsideFirstAircraft = firstAircraft.dlina_borta * firstAircraft.shirina_borta;
+            const areaInsideSecondAircraft = secondAircraft.dlina_borta * secondAircraft.shirina_borta;
+            const maxRangeFirstAircraft = firstAircraft.m_topliva;
+            const maxRangeSecondAircraft = secondAircraft.m_topliva;
+            const weightFirstAircraft = firstAircraft.m_dvigatel + firstAircraft.m_krylo + firstAircraft.m_structure;
+            const weightSecondAircraft = secondAircraft.m_dvigatel + secondAircraft.m_krylo + secondAircraft.m_structure;
+            const maxSpeedFirstAircraft = Math.sqrt((2 * firstAircraft.f_tyagi_dvig) / (firstAircraft.s_krylo * firstAircraft.k_aero_sopr * 0.412*0.5));
+            const maxSpeedSecondAircraft = Math.sqrt((2 * secondAircraft.f_tyagi_dvig) / (secondAircraft.s_krylo * secondAircraft.k_aero_sopr * 0.412*0.5));
+            const maxHeightFirstAircraft = ((firstAircraft.f_tyagi_dvig * 2 - firstAircraft.k_aero_sopr * 30 * firstAircraft.s_secheniya) / ((weightFirstAircraft / firstAircraft.s_krylo) * Math.log((weightFirstAircraft + firstAircraft.m_topliva) / weightFirstAircraft)));
+            const maxHeightSecondAircraft = ((secondAircraft.f_tyagi_dvig * 2 - secondAircraft.k_aero_sopr * 30 * secondAircraft.s_secheniya) / ((weightSecondAircraft / secondAircraft.s_krylo) * Math.log((weightSecondAircraft + secondAircraft.m_topliva) / weightSecondAircraft)));
+
+            // Формирование текста анализа
+            analysisText =
+            `${firstAircraft.name}, ${secondAircraft.name}
+            Сравнение размеров:
+            Площадь борта первого ЛА: ${areaInsideFirstAircraft} м2
+            Площадь борта второго ЛА: ${areaInsideSecondAircraft} м2`;
+
+            const areaDifference = Math.abs(areaInsideFirstAircraft - areaInsideSecondAircraft);
+            if (areaDifference > 10) {
+                // Если разница больше 10, добавляем информацию о вместимости
+                if (areaInsideFirstAircraft > areaInsideSecondAircraft) {
+                    analysisText += `\nСамолет ${firstAircraft.name} ${firstAircraft.model} обладает лучшей вместимостью для пассажиров или грузов, чем ${secondAircraft.name} ${secondAircraft.model}.`;
+                } else {
+                    analysisText += `\nСамолет ${Aircraft.name} ${firstAircraft.model} обладает меньшей вместимостью для пассажиров или грузов, чем ${secondAircraft.name} ${secondAircraft.model}.`;
+                }
+            } else {
+                // Иначе добавляем информацию о схожести вместимости
+                analysisText += `\nПлощади бортов примерно равны, и летательные аппараты могут перевозить одинаковые грузы.`;
+            }
+
+            analysisText +=
+            `\n\nДальность полетов:`;
+
+            const toplDifference = Math.abs(maxRangeFirstAircraft - maxRangeSecondAircraft);
+            if (toplDifference > 1000) {
+                // Если разница больше 10, добавляем информацию о вместимости
+                if (maxRangeFirstAircraft > maxRangeSecondAircraft) {
+                    analysisText += `\nСамолет ${firstAircraft.name} ${firstAircraft.model} обладает лучшей вместимостью топливного бака, чем ${secondAircraft.name} ${secondAircraft.model}. При одинаковом расходе топлива, он пролетит большее расстояние`;
+                } else {
+                    analysisText += `\nСамолет ${Aircraft.name} ${firstAircraft.model} обладает меньшей вместимостью топливного бака, чем ${secondAircraft.name} ${secondAircraft.model}.При одинаковом расходе топлива, он пролетит меньшее расстояние`;
+                }
+            } else {
+                // Иначе добавляем информацию о схожести вместимости
+                analysisText += `\nТопливные баки примерно равны, и летательные аппараты могут проходить примерно одинаковые расстояния при одинаковом расходе топлива.`;
+            }
+
+            analysisText +=
+            `\n\nОценка веса:
+            Вес первого ЛА: ${weightFirstAircraft} кг
+            Вес второго ЛА: ${weightSecondAircraft} кг`;
+
+            analysisText +=
+            `\n\nАнализ максимальной скорости на высоте 10км:
+            Максимальная скорость первого ЛА: ${maxSpeedFirstAircraft} км/ч
+            Максимальная скорость второго ЛА: ${maxSpeedSecondAircraft} км/ч`;
+
+            if (maxSpeedFirstAircraft > maxSpeedSecondAircraft) {
+                analysisText += `\nЭто связано с тем, что  отношение мощности турбин и обтекаемости ${firstAircraft.name} ${firstAircraft.model} выше, чем у ${secondAircraft.name} ${secondAircraft.model}.`;
+            } else {
+                analysisText += `\nЭто связано с тем, что отношение мощности турбин и обтекаемости ${firstAircraft.name} ${firstAircraft.model} меньше, чем у ${secondAircraft.name} ${secondAircraft.model}.`;
+            }
+
+            analysisText +=
+            `\n\nОпределение максимальной высоты:
+            Определить максимальную высоту полета невозможно без экспериментальных данных даже примерно, однако можно сказать, что:\n`;
+
+            if (maxHeightFirstAircraft > maxHeightSecondAircraft) {
+                analysisText += `\n Hmax ${firstAircraft.name} ${firstAircraft.model} выше, чем у ${secondAircraft.name} ${secondAircraft.model} в силу зависимостей величин мощности турбины, веса Ла и его обтекаемости.`;
+            } else {
+                analysisText += `\n Hmax ${firstAircraft.name} ${firstAircraft.model} меньше, чем у ${secondAircraft.name} ${secondAircraft.model} в силу зависимостей величин мощности турбины, веса Ла и его обтекаемости.`;
+            }
+
+
+            // Вывод результатов анализа в textarea
+            document.getElementById('analysisTextArea').value = analysisText;
+        } catch (error) {
+            // Обработка ошибок
+            alert('Произошла ошибка при выполнении анализа: ' + error.message);
+        }
+    }
+
+    document.getElementById('saveButton').addEventListener('click', function() {
+        const analysisText = document.getElementById('analysisTextArea').value.trim();
+        if (!analysisText) {
+            alert('Анализ не выполнен!');
+            return;
+        }
+
+        // Формирование объекта для отправки на сервер
+        const reportData = {
+            name_report: analysisText.split('\n')[0], // Берем первую строку текста анализа как имя отчета
+            report_text: analysisText
+        };
+
+        // Отправка POST-запроса на сервер для создания отчета
+        fetch('/api/v1/reports', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(reportData)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ошибка HTTP: ' + response.status);
+                }
+                // Перезагрузка страницы после успешного создания отчета
+                alert('Отчет успешно сохранен!');
+                window.location.href = "/";
+            })
+            .catch(error => {
+                alert('Произошла ошибка при сохранении отчета: ' + error.message);
+            });
+    });
+
+
+    function goBack() {
+        window.history.back();
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Редактировать летательную конструкцию</title>
+  <style>
+    body {
+      font-family: "Arial", sans-serif;
+      font-size: 14px;
+      color: black;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+    }
+
+    .container {
+      padding: 20px;
+      text-align: center;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
+
+    .button {
+      padding: 10px 20px;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #cfdfff;
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.3s, box-shadow 0.3s;
+      width: 200px;
+
+    }
+
+    .button:hover {
+      background-color: #a8cfff;
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="title">Информация по летательной конструкции</div>
+  <form id="editForm">
+    <div class="form-group">
+      <label for="name">Название:</label>
+      <input type="text" id="name" name="name">
+    </div>
+    <div class="form-group">
+      <label for="model">Модель:</label>
+      <input type="text" id="model" name="model">
+    </div>
+    <div class="form-group">
+      <label for="k_aero_sopr">Коэффициент аэродинамического сопротивления корпуса:</label>
+      <input type="text" id="k_aero_sopr" name="k_aero_sopr">
+    </div>
+    <div class="form-group">
+      <label for="s_secheniya">Средняя площадь сечения корпуса, м2:</label>
+      <input type="text" id="s_secheniya" name="s_secheniya">
+    </div>
+    <div class="form-group">
+      <label for="f_tyagi_dvig">Сила тяги двигателя, Н:</label>
+      <input type="text" id="f_tyagi_dvig" name="f_tyagi_dvig">
+    </div>
+    <div class="form-group">
+      <label for="m_topliva">Вместимость топлива, кг:</label>
+      <input type="text" id="m_topliva" name="m_topliva">
+    </div>
+    <div class="form-group">
+      <label for="dlina_borta">Длина борта, м:</label>
+      <input type="text" id="dlina_borta" name="dlina_borta">
+    </div>
+    <div class="form-group">
+      <label for="shirina_borta">Ширина борта, м:</label>
+      <input type="text" id="shirina_borta" name="shirina_borta">
+    </div>
+    <div class="form-group">
+      <label for="s_krylo">Площадь крыла, м2:</label>
+      <input type="text" id="s_krylo" name="s_krylo">
+    </div>
+    <div class="form-group">
+      <label for="m_dvigatel">Масса двигателя, кг:</label>
+      <input type="text" id="m_dvigatel" name="m_dvigatel">
+    </div>
+    <div class="form-group">
+      <label for="m_krylo">Масса крыла, кг:</label>
+      <input type="number" id="m_krylo" name="m_krylo">
+    </div>
+    <div class="form-group">
+      <label for="m_structure">Масса структуры, кг:</label>
+      <input min="100" type="number" id="m_structure" name="m_structure">
+    </div>
+    <button type="button" class="button" onclick = "saveChanges()">Сохранить</button>
+
+  </form>
+  <br><a th:href="@{/aircrafts}"><button class="button">Отменить</button></a>
+</div>
+
+<script>
+  function getAircraftById(id) {
+    fetch(`/api/v1/aircrafts/${id}`)
+            .then(response => response.json())
+            .then(data => {
+              document.getElementById("name").value = data.name;
+              document.getElementById("model").value = data.model;
+              document.getElementById("k_aero_sopr").value = data.k_aero_sopr;
+              document.getElementById("s_secheniya").value = data.s_secheniya;
+              document.getElementById("f_tyagi_dvig").value = data.f_tyagi_dvig;
+              document.getElementById("m_topliva").value = data.m_topliva;
+              document.getElementById("dlina_borta").value = data.dlina_borta;
+              document.getElementById("shirina_borta").value = data.shirina_borta;
+              document.getElementById("s_krylo").value = data.s_krylo;
+              document.getElementById("m_dvigatel").value = data.m_dvigatel;
+              document.getElementById("m_krylo").value = data.m_krylo;
+              document.getElementById("m_structure").value = data.m_structure;
+            })
+            .catch(error => {
+              alert('Произошла ошибка при получении данных об объекте');
+            });
+  }
+
+  // Функция для отправки PUT запроса с обновленными данными
+  function updateAircraft(id, updatedData) {
+    console.log(updatedData);
+    fetch(`/api/v1/aircrafts/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedData),
+    })
+            .then(response => {
+              console.log(response.status);
+              if (response.status === 200) {
+                alert('Данные успешно обновлены!');
+                window.location.href = "/aircrafts";
+              } else {
+                alert('Произошла ошибка при обновлении данных');
+              }
+            })
+            .catch(error => {
+              alert('Произошла ошибка при обновлении данных');
+            });
+  }
+  // Функция для получения данных об объекте при загрузке страницы
+  window.onload = function() {
+    // const urlParams = new URLSearchParams(window.location.search);
+    const id = window.location.href.split('/edit/')[1];
+    if (id) {
+      getAircraftById(id);
+    }
+  };
+
+  // Функция для отправки обновленных данных на сервер
+  function saveChanges() {
+    // const urlParams = new URLSearchParams(window.location.search);
+    // const id = urlParams.get('id');
+    const id = window.location.href.split('/edit/')[1];
+    const name = document.getElementById("name").value;
+    const model = document.getElementById("model").value;
+    const k_aero_sopr = document.getElementById("k_aero_sopr").value;
+    const s_secheniya = document.getElementById("s_secheniya").value;
+    const f_tyagi_dvig = document.getElementById("f_tyagi_dvig").value;
+    const m_topliva = document.getElementById("m_topliva").value;
+    const dlina_borta = document.getElementById("dlina_borta").value;
+    const shirina_borta = document.getElementById("shirina_borta").value;
+    const s_krylo = document.getElementById("s_krylo").value;
+    const m_dvigatel = document.getElementById("m_dvigatel").value;
+    const m_krylo = document.getElementById("m_krylo").value;
+    const m_structure = document.getElementById("m_structure").value;
+
+    const updatedData = {
+      name: name,
+      model: model,
+      k_aero_sopr: k_aero_sopr,
+      s_secheniya: s_secheniya,
+      f_tyagi_dvig: f_tyagi_dvig,
+      m_topliva: m_topliva,
+      dlina_borta: dlina_borta,
+      shirina_borta: shirina_borta,
+      s_krylo: s_krylo,
+      m_dvigatel: m_dvigatel,
+      m_krylo: m_krylo,
+      m_structure: m_structure
+    };
+
+    if (id) {
+      updateAircraft(id, updatedData);
+    } else {
+      alert('Невозможно сохранить изменения: отсутствует идентификатор объекта');
+    }
+  }
+
+</script>
+
+</body>
+</html>
